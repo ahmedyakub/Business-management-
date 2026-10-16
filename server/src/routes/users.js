@@ -21,11 +21,11 @@ router.post('/', asyncHandler(async (req, res) => {
 
 router.put('/:id', asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id);
-  if (!user) throw new HttpError(404, 'User not found');
+  if (!user) throw new HttpError(404, 'errors.userNotFound');
   const { name, email, password, role, active } = req.body;
   const isSelf = user._id.equals(req.user._id);
   if (isSelf && (role && role !== user.role || active === false)) {
-    throw new HttpError(400, 'You cannot change your own role or disable your own account');
+    throw new HttpError(400, 'errors.cannotChangeSelf');
   }
   if (name !== undefined) user.name = name;
   if (email !== undefined) user.email = email;
@@ -37,10 +37,10 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 router.delete('/:id', asyncHandler(async (req, res) => {
-  if (req.user._id.equals(req.params.id)) throw new HttpError(400, 'You cannot delete your own account');
+  if (req.user._id.equals(req.params.id)) throw new HttpError(400, 'errors.cannotDeleteSelf');
   const user = await User.findByIdAndDelete(req.params.id);
-  if (!user) throw new HttpError(404, 'User not found');
-  res.json({ message: 'Deleted' });
+  if (!user) throw new HttpError(404, 'errors.userNotFound');
+  res.json({ message: req.t('msg.deleted') });
 }));
 
 export default router;

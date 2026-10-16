@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 
 import { authenticate } from './middleware/auth.js';
 import { errorHandler, notFound } from './middleware/error.js';
+import { i18nMiddleware } from './i18n/index.js';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import productRoutes from './routes/products.js';
@@ -22,6 +23,7 @@ import { categoriesRouter, customersRouter, expensesRouter, suppliersRouter } fr
 export function createApp() {
   const app = express();
   app.use(cors({ origin: process.env.CLIENT_URL?.split(',') || true }));
+  app.use(i18nMiddleware);
   app.use(express.json({ limit: '1mb' }));
   if (process.env.NODE_ENV !== 'test') app.use(morgan('dev'));
 

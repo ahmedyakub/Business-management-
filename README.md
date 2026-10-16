@@ -33,9 +33,16 @@ Permissions are defined in [`server/src/config/permissions.js`](server/src/confi
 
 The interface is available in **English** and **Somali (Af-Soomaali)**. Use the **EN | SO** switch in the top bar (or on the login page). The choice is saved in the browser; on first visit the app follows the browser language.
 
-Translations live in [`client/src/i18n/en.js`](client/src/i18n/en.js) and [`client/src/i18n/so.js`](client/src/i18n/so.js); both files must have the same keys. To add a language, copy `en.js`, translate the values and register it in `client/src/context/LanguageContext.jsx`.
+The client sends the selected language to the API in the `Accept-Language` header, so API error and success messages and the downloadable PDF invoice come back in the same language (a `?lang=so` query parameter also works for PDF links).
 
-Not yet translated: error messages that come from the API and the downloadable PDF invoice (the on-screen invoice is translated).
+Translations live in:
+
+- [`client/src/i18n/en.js`](client/src/i18n/en.js) and [`client/src/i18n/so.js`](client/src/i18n/so.js): the interface
+- [`server/src/i18n/messages.js`](server/src/i18n/messages.js): API messages, validation field names and PDF labels
+
+Each language must have the same keys as English. To add a language, add its dictionary in both places and register it in `client/src/context/LanguageContext.jsx` and `server/src/i18n/index.js`.
+
+Data you enter yourself (product names, the invoice footer in Settings, etc.) is shown as typed.
 
 ## Tech stack
 

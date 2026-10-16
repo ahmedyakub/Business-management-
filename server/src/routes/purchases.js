@@ -18,7 +18,7 @@ router.get('/', authorize('purchases:read'), asyncHandler(async (req, res) => {
 
 router.get('/:id', authorize('purchases:read'), asyncHandler(async (req, res) => {
   const purchase = await Purchase.findById(req.params.id).populate('supplier').populate('createdBy', 'name');
-  if (!purchase) throw new HttpError(404, 'Purchase not found');
+  if (!purchase) throw new HttpError(404, 'errors.purchaseNotFound');
   res.json(purchase);
 }));
 
@@ -26,8 +26,8 @@ router.get('/:id', authorize('purchases:read'), asyncHandler(async (req, res) =>
 router.post('/', authorize('purchases:write'), asyncHandler(async (req, res) => {
   const { supplier: supplierId, items = [], amountPaid = 0, notes, date, updateCostPrice = true } = req.body;
   const supplier = await Supplier.findById(supplierId);
-  if (!supplier) throw new HttpError(400, 'Supplier is required');
-  if (!Array.isArray(items) || items.length === 0) throw new HttpError(400, 'A purchase needs at least one item');
+  if (!supplier) throw new HttpError(400, 'errors.supplierRequired');
+  if (!Array.isArray(items) || items.length === 0) throw new HttpError(400, 'errors.purchaseNeedsItem');
 
   const products = await Product.find({ _id: { $in: items.map((i) => i.product) } });
   const byId = new Map(products.map((p) => [String(p._id), p]));
@@ -36,9 +36,9 @@ router.post('/', authorize('purchases:write'), asyncHandler(async (req, res) => 
     const p = byId.get(String(line.product));
     const qty = Number(line.quantity);
     const cost = line.unitCost !== undefined && line.unitCost !== '' ? Number(line.unitCost) : p?.purchasePrice;
-    if (!p) throw new HttpError(400, 'Product not found');
-    if (!Number.isInteger(qty) || qty <= 0) throw new HttpError(400, `Invalid quantity for ${p.name}`);
-    if (!Number.isFinite(cost) || cost < 0) throw new HttpError(400, `Invalid cost for ${p.name}`);
+    if (!p) throw new HttpError(400, 'errors.productNotFound');
+    if (!Number.isInteger(qty) || qty <= 0) throw new HttpError(400, 'errors.invalidQuantityFor', { name: p.name });
+    if (!Number.isFinite(cost) || cost < 0) throw new HttpError(400, 'errors.invalidCostFor', { name: p.name });
     return { product: p._id, name: p.name, quantity: qty, unitCost: cost, total: round2(qty * cost) };
   });
 

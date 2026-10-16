@@ -28,31 +28,31 @@ router.get('/', authorize('sales:read'), asyncHandler(async (req, res) => {
 
 router.get('/:id', authorize('sales:read'), asyncHandler(async (req, res) => {
   const sale = await Sale.findById(req.params.id).populate('customer').populate('createdBy', 'name');
-  if (!sale) throw new HttpError(404, 'Sale not found');
+  if (!sale) throw new HttpError(404, 'errors.saleNotFound');
   res.json(sale);
 }));
 
 router.get('/:id/invoice.pdf', authorize('sales:read'), asyncHandler(async (req, res) => {
   const sale = await Sale.findById(req.params.id).populate('customer').populate('createdBy', 'name');
-  if (!sale) throw new HttpError(404, 'Sale not found');
+  if (!sale) throw new HttpError(404, 'errors.saleNotFound');
   const settings = await Settings.get();
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename="${sale.invoiceNumber}.pdf"`);
-  renderInvoicePdf(sale, settings, res);
+  renderInvoicePdf(sale, settings, res, req.lang);
 }));
 
 router.post('/', authorize('sales:write'), asyncHandler(async (req, res) => {
   const { customer: customerId, items = [], discount = 0, taxRate = 0, amountPaid, paymentMethod = 'cash', notes, date } = req.body;
-  if (!Array.isArray(items) || items.length === 0) throw new HttpError(400, 'A sale needs at least one item');
+  if (!Array.isArray(items) || items.length === 0) throw new HttpError(400, 'errors.saleNeedsItem');
 
   const customer = customerId ? await Customer.findById(customerId) : null;
-  if (customerId && !customer) throw new HttpError(400, 'Customer not found');
+  if (customerId && !customer) throw new HttpError(400, 'errors.customerNotFound');
 
   // Merge duplicate lines and validate against current stock.
   const merged = new Map();
   for (const line of items) {
     const qty = Number(line.quantity);
-    if (!line.product || !Number.isInteger(qty) || qty <= 0) throw new HttpError(400, 'Each item needs a product and a positive whole quantity');
+    if (!line.product || !Number.isInteger(qty) || qty <= 0) throw new HttpError(400, 'errors.invalidSaleLine');
     const prev = merged.get(String(line.product));
     merged.set(String(line.product), { quantity: (prev?.quantity || 0) + qty, unitPrice: line.unitPrice ?? prev?.unitPrice });
   }
@@ -62,10 +62,10 @@ router.post('/', authorize('sales:write'), asyncHandler(async (req, res) => {
   const saleItems = [];
   for (const [id, line] of merged) {
     const p = byId.get(id);
-    if (!p || !p.active) throw new HttpError(400, 'One or more products are not available');
-    if (p.quantity < line.quantity) throw new HttpError(400, `Insufficient stock for ${p.name} (available: ${p.quantity})`);
+    if (!p || !p.active) throw new HttpError(400, 'errors.productsUnavailable');
+    if (p.quantity < line.quantity) throw new HttpError(400, 'errors.insufficientStock', { name: p.name, available: p.quantity });
     const unitPrice = line.unitPrice !== undefined && line.unitPrice !== '' ? Number(line.unitPrice) : p.sellingPrice;
-    if (!Number.isFinite(unitPrice) || unitPrice < 0) throw new HttpError(400, `Invalid price for ${p.name}`);
+    if (!Number.isFinite(unitPrice) || unitPrice < 0) throw new HttpError(400, 'errors.invalidPriceFor', { name: p.name });
     saleItems.push({
       product: p._id, name: p.name, sku: p.sku, quantity: line.quantity,
       unitPrice, costPrice: p.purchasePrice, total: round2(unitPrice * line.quantity),
@@ -78,7 +78,7 @@ router.post('/', authorize('sales:write'), asyncHandler(async (req, res) => {
   const tax = round2((subtotal - disc) * (rate / 100));
   const total = round2(subtotal - disc + tax);
   const paid = round2(amountPaid === undefined || amountPaid === '' ? total : Math.max(Number(amountPaid) || 0, 0));
-  if (!customer && paid < total) throw new HttpError(400, 'Walk-in sales must be fully paid. Select a customer to sell on credit.');
+  if (!customer && paid < total) throw new HttpError(400, 'errors.walkInMustPay');
   const appliedPaid = Math.min(paid, total);
 
   // Decrement stock atomically per product; roll back on failure.
@@ -90,7 +90,7 @@ router.post('/', authorize('sales:write'), asyncHandler(async (req, res) => {
         { $inc: { quantity: -item.quantity } },
         { new: true }
       );
-      if (!updated) throw new HttpError(409, `Stock for ${item.name} changed, please retry`);
+      if (!updated) throw new HttpError(409, 'errors.stockChanged', { name: item.name });
       done.push(item);
     }
   } catch (err) {
@@ -131,7 +131,7 @@ router.post('/', authorize('sales:write'), asyncHandler(async (req, res) => {
 router.post('/:id/void', authorize('sales:void'), asyncHandler(async (req, res) => {
   // Conditional update guarantees a sale is only voided (and stock restored) once.
   const sale = await Sale.findOneAndUpdate({ _id: req.params.id, status: { $ne: 'void' } }, { $set: { status: 'void' } });
-  if (!sale) throw new HttpError(400, 'Sale not found or already void');
+  if (!sale) throw new HttpError(400, 'errors.saleAlreadyVoid');
   await Promise.all(sale.items.map((i) => Product.updateOne({ _id: i.product }, { $inc: { quantity: i.quantity } })));
   const restored = await Product.find({ _id: { $in: sale.items.map((i) => i.product) } });
   await Promise.all(restored.map(checkLowStock));

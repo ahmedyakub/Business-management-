@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import en from '../i18n/en.js';
 import so from '../i18n/so.js';
 import { setDateLocale } from '../utils/format.js';
+import { setApiLanguage } from '../api/client.js';
 
 const DICTIONARIES = { en, so };
 
@@ -25,8 +26,9 @@ function initialLanguage() {
 export function LanguageProvider({ children }) {
   const [lang, setLang] = useState(initialLanguage);
 
-  // Set before children render so date helpers format in the active language.
+  // Set before children render so dates and API requests use the active language.
   setDateLocale(lang === 'so' ? 'so-SO' : undefined);
+  setApiLanguage(lang);
 
   useEffect(() => {
     document.documentElement.lang = lang;

@@ -12,7 +12,7 @@ export const categoriesRouter = crudRouter(Category, {
   resource: 'categories',
   sort: { name: 1 },
   beforeDelete: async (id) => {
-    if (await Product.exists({ category: id })) throw new HttpError(400, 'Category is used by products and cannot be deleted');
+    if (await Product.exists({ category: id })) throw new HttpError(400, 'errors.categoryInUse');
   },
 });
 
@@ -22,7 +22,7 @@ export const customersRouter = crudRouter(Customer, {
   sort: { name: 1 },
   readOnlyFields: ['balance'],
   beforeDelete: async (id) => {
-    if (await Sale.exists({ customer: id })) throw new HttpError(400, 'Customer has sales history and cannot be deleted');
+    if (await Sale.exists({ customer: id })) throw new HttpError(400, 'errors.customerHasSales');
   },
 });
 
@@ -32,7 +32,7 @@ export const suppliersRouter = crudRouter(Supplier, {
   sort: { name: 1 },
   readOnlyFields: ['balance'],
   beforeDelete: async (id) => {
-    if (await Purchase.exists({ supplier: id })) throw new HttpError(400, 'Supplier has purchase history and cannot be deleted');
+    if (await Purchase.exists({ supplier: id })) throw new HttpError(400, 'errors.supplierHasPurchases');
   },
 });
 

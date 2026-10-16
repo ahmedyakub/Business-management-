@@ -2,9 +2,16 @@ import axios from 'axios';
 
 const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api' });
 
+// UI language sent to the API so its messages and PDFs match; set by LanguageProvider.
+let apiLanguage = 'en';
+export function setApiLanguage(lang) {
+  apiLanguage = lang;
+}
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
+  config.headers['Accept-Language'] = apiLanguage;
   return config;
 });
 
@@ -19,7 +26,8 @@ api.interceptors.response.use(
   }
 );
 
-export const errorMessage = (err) => err?.response?.data?.message || err?.message || 'Something went wrong';
+const FALLBACK_ERROR = { en: 'Something went wrong', so: 'Wax khalad ah ayaa dhacay' };
+export const errorMessage = (err) => err?.response?.data?.message || FALLBACK_ERROR[apiLanguage] || FALLBACK_ERROR.en;
 
 // Download a file from an authenticated endpoint.
 export async function download(url, filename) {
