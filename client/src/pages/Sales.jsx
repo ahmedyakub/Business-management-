@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api, { errorMessage } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useLang } from '../context/LanguageContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { DateRange, Empty, Loading, PageHeader, Status } from '../components/ui.jsx';
-import { capitalize, fmtDateTime, monthStart, toInputDate, useMoney } from '../utils/format.js';
+import { fmtDateTime, monthStart, toInputDate, useMoney } from '../utils/format.js';
 
 export default function Sales() {
   const { can } = useAuth();
+  const { t } = useLang();
   const toast = useToast();
   const money = useMoney();
   const navigate = useNavigate();
@@ -29,30 +31,30 @@ export default function Sales() {
 
   return (
     <>
-      <PageHeader title="Sales & Invoices" subtitle={sales ? `${active.length} sales · ${money(active.reduce((s, x) => s + x.total, 0))}` : ''}>
-        <input className="search" placeholder="Invoice #" value={search} onChange={(e) => setSearch(e.target.value)} />
+      <PageHeader title={t('nav.sales')} subtitle={sales ? t('sales.subtitle', { n: active.length, total: money(active.reduce((s, x) => s + x.total, 0)) }) : ''}>
+        <input className="search" placeholder={t('sales.invoiceNo')} value={search} onChange={(e) => setSearch(e.target.value)} />
         <DateRange {...range} onChange={setRange} />
         <select value={status} onChange={(e) => setStatus(e.target.value)}>
-          <option value="">All statuses</option>
-          {['paid', 'partial', 'unpaid', 'void'].map((s) => <option key={s} value={s}>{capitalize(s)}</option>)}
+          <option value="">{t('sales.allStatuses')}</option>
+          {['paid', 'partial', 'unpaid', 'void'].map((s) => <option key={s} value={s}>{t(`status.${s}`)}</option>)}
         </select>
-        {can('sales:write') && <Link to="/sales/new" className="btn btn-primary">+ New Sale</Link>}
+        {can('sales:write') && <Link to="/sales/new" className="btn btn-primary">{t('dash.newSale')}</Link>}
       </PageHeader>
       <div className="card">
-        {!sales ? <Loading /> : sales.length === 0 ? <Empty>No sales in this period.</Empty> : (
+        {!sales ? <Loading /> : sales.length === 0 ? <Empty>{t('sales.none')}</Empty> : (
           <div className="table-wrap">
             <table>
               <thead>
-                <tr><th>Invoice</th><th>Date</th><th>Customer</th><th>Items</th><th>Payment</th><th>Status</th><th>Cashier</th><th className="right">Total</th><th className="right">Due</th></tr>
+                <tr><th>{t('common.invoice')}</th><th>{t('common.date')}</th><th>{t('common.customer')}</th><th>{t('common.items')}</th><th>{t('sales.payment')}</th><th>{t('common.status')}</th><th>{t('sales.cashier')}</th><th className="right">{t('common.total')}</th><th className="right">{t('sales.due')}</th></tr>
               </thead>
               <tbody>
                 {sales.map((s) => (
                   <tr key={s._id} className={`clickable ${s.status === 'void' ? 'inactive' : ''}`} onClick={() => navigate(`/sales/${s._id}`)}>
                     <td className="mono">{s.invoiceNumber}</td>
                     <td>{fmtDateTime(s.date)}</td>
-                    <td>{s.customer?.name || 'Walk-in'}</td>
+                    <td>{s.customer?.name || t('common.walkIn')}</td>
                     <td>{s.items.reduce((n, i) => n + i.quantity, 0)}</td>
-                    <td>{capitalize(s.paymentMethod)}</td>
+                    <td>{t(`method.${s.paymentMethod}`)}</td>
                     <td><Status value={s.status} /></td>
                     <td>{s.createdBy?.name}</td>
                     <td className="right">{money(s.total)}</td>

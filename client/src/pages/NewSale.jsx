@@ -2,15 +2,18 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api, { errorMessage } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useLang } from '../context/LanguageContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { PageHeader } from '../components/ui.jsx';
-import { capitalize, useMoney } from '../utils/format.js';
+import { useMoney } from '../utils/format.js';
+import { PAYMENT_METHODS } from './Expenses.jsx';
 
 const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 
 // Point-of-sale screen: search/scan products, build a cart, take payment, issue an invoice.
 export default function NewSale() {
   const { settings } = useAuth();
+  const { t } = useLang();
   const toast = useToast();
   const money = useMoney();
   const navigate = useNavigate();
@@ -39,11 +42,11 @@ export default function NewSale() {
   }, [products, search]);
 
   const add = (p) => {
-    if (p.quantity <= 0) return toast(`${p.name} is out of stock`, 'error');
+    if (p.quantity <= 0) return toast(t('pos.outOfStock', { name: p.name }), 'error');
     setCart((c) => {
       const existing = c.find((i) => i.product._id === p._id);
       if (existing) {
-        if (existing.quantity >= p.quantity) { toast(`Only ${p.quantity} ${p.unit} of ${p.name} in stock`, 'error'); return c; }
+        if (existing.quantity >= p.quantity) { toast(t('pos.onlyN', { q: p.quantity, u: p.unit, name: p.name }), 'error'); return c; }
         return c.map((i) => (i.product._id === p._id ? { ...i, quantity: i.quantity + 1 } : i));
       }
       return [...c, { product: p, quantity: 1, unitPrice: p.sellingPrice }];
@@ -72,8 +75,8 @@ export default function NewSale() {
   const due = round2(Math.max(total - paid, 0));
 
   const checkout = async () => {
-    if (!cart.length) return toast('Add at least one product', 'error');
-    if (!customer && due > 0) return toast('Select a customer to sell on credit or partial payment', 'error');
+    if (!cart.length) return toast(t('pos.needItem'), 'error');
+    if (!customer && due > 0) return toast(t('pos.needCustomer'), 'error');
     setBusy(true);
     try {
       const { data } = await api.post('/sales', {
@@ -85,7 +88,7 @@ export default function NewSale() {
         paymentMethod,
         notes: notes || undefined,
       });
-      toast(`Sale ${data.invoiceNumber} completed${change > 0 ? ` — change due ${money(change)}` : ''}`);
+      toast(t('pos.completed', { inv: data.invoiceNumber }) + (change > 0 ? t('pos.changeDue', { v: money(change) }) : ''));
       navigate(`/sales/${data._id}`);
     } catch (err) {
       toast(errorMessage(err), 'error');
@@ -97,13 +100,13 @@ export default function NewSale() {
 
   return (
     <>
-      <PageHeader title="New Sale" subtitle="Search or scan products to add them to the cart" />
+      <PageHeader title={t('nav.newSale')} subtitle={t('pos.subtitle')} />
       <div className="pos">
         <div className="card pos-products">
           <input
             ref={searchRef}
             className="search search-lg"
-            placeholder="Search by name, SKU or scan barcode, then press Enter"
+            placeholder={t('pos.searchPh')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={onSearchKey}
@@ -115,17 +118,17 @@ export default function NewSale() {
                 <span className="tile-name">{p.name}</span>
                 <span className="tile-meta">{p.sku}</span>
                 <span className="tile-price">{money(p.sellingPrice)}</span>
-                <span className={`tile-stock ${p.isLowStock ? 'text-warn' : ''}`}>{p.quantity} {p.unit} in stock</span>
+                <span className={`tile-stock ${p.isLowStock ? 'text-warn' : ''}`}>{t('pos.inStock', { q: p.quantity, u: p.unit })}</span>
               </button>
             ))}
           </div>
         </div>
 
         <div className="card pos-cart">
-          <h3>Cart</h3>
-          {cart.length === 0 ? <p className="muted">Cart is empty.</p> : (
+          <h3>{t('pos.cart')}</h3>
+          {cart.length === 0 ? <p className="muted">{t('pos.empty')}</p> : (
             <table className="cart-table">
-              <thead><tr><th>Item</th><th>Qty</th><th>Price</th><th className="right">Total</th><th /></tr></thead>
+              <thead><tr><th>{t('common.item')}</th><th>{t('common.qty')}</th><th>{t('pos.price')}</th><th className="right">{t('common.total')}</th><th /></tr></thead>
               <tbody>
                 {cart.map((i) => (
                   <tr key={i.product._id}>
@@ -133,7 +136,7 @@ export default function NewSale() {
                     <td><input type="number" min="1" max={i.product.quantity} step="1" value={i.quantity} onChange={(e) => update(i.product._id, { quantity: Math.min(Math.max(parseInt(e.target.value, 10) || 1, 1), i.product.quantity) })} /></td>
                     <td><input type="number" min="0" step="any" value={i.unitPrice} onChange={(e) => update(i.product._id, { unitPrice: e.target.value })} /></td>
                     <td className="right">{money((Number(i.unitPrice) || 0) * i.quantity)}</td>
-                    <td><button className="btn-icon" onClick={() => removeLine(i.product._id)} aria-label="Remove">✕</button></td>
+                    <td><button className="btn-icon" onClick={() => removeLine(i.product._id)} aria-label={t('pos.remove')}>✕</button></td>
                   </tr>
                 ))}
               </tbody>
@@ -141,33 +144,33 @@ export default function NewSale() {
           )}
 
           <div className="form-grid compact">
-            <label className="full">Customer
+            <label className="full">{t('common.customer')}
               <select value={customer} onChange={(e) => setCustomer(e.target.value)}>
-                <option value="">Walk-in customer</option>
+                <option value="">{t('common.walkIn')}</option>
                 {customers.map((c) => <option key={c._id} value={c._id}>{c.name}{c.phone ? ` (${c.phone})` : ''}</option>)}
               </select>
             </label>
-            <label>Discount<input type="number" min="0" step="any" value={discount} onChange={(e) => setDiscount(e.target.value)} /></label>
-            <label>Tax %<input type="number" min="0" step="any" value={taxRate} onChange={(e) => setTaxRate(e.target.value)} /></label>
-            <label>Payment method
+            <label>{t('common.discount')}<input type="number" min="0" step="any" value={discount} onChange={(e) => setDiscount(e.target.value)} /></label>
+            <label>{t('pos.taxRate')}<input type="number" min="0" step="any" value={taxRate} onChange={(e) => setTaxRate(e.target.value)} /></label>
+            <label>{t('pos.paymentMethod')}
               <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
-                {['cash', 'card', 'bank', 'mobile'].map((m) => <option key={m} value={m}>{capitalize(m)}</option>)}
+                {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{t(`method.${m}`)}</option>)}
               </select>
             </label>
-            <label>Amount received<input type="number" min="0" step="any" placeholder={String(total)} value={amountPaid} onChange={(e) => setAmountPaid(e.target.value)} /></label>
-            <label className="full">Notes<input value={notes} onChange={(e) => setNotes(e.target.value)} /></label>
+            <label>{t('pos.received')}<input type="number" min="0" step="any" placeholder={String(total)} value={amountPaid} onChange={(e) => setAmountPaid(e.target.value)} /></label>
+            <label className="full">{t('common.notes')}<input value={notes} onChange={(e) => setNotes(e.target.value)} /></label>
           </div>
 
           <div className="totals">
-            <div><span>Subtotal</span><span>{money(subtotal)}</span></div>
-            {disc > 0 && <div><span>Discount</span><span>−{money(disc)}</span></div>}
-            {tax > 0 && <div><span>Tax ({taxRate}%)</span><span>{money(tax)}</span></div>}
-            <div className="grand"><span>Total</span><span>{money(total)}</span></div>
-            {change > 0 && <div className="text-good"><span>Change</span><span>{money(change)}</span></div>}
-            {due > 0 && <div className="text-bad"><span>Balance due (on account)</span><span>{money(due)}</span></div>}
+            <div><span>{t('common.subtotal')}</span><span>{money(subtotal)}</span></div>
+            {disc > 0 && <div><span>{t('common.discount')}</span><span>−{money(disc)}</span></div>}
+            {tax > 0 && <div><span>{t('common.taxPct', { rate: taxRate })}</span><span>{money(tax)}</span></div>}
+            <div className="grand"><span>{t('common.total')}</span><span>{money(total)}</span></div>
+            {change > 0 && <div className="text-good"><span>{t('pos.change')}</span><span>{money(change)}</span></div>}
+            {due > 0 && <div className="text-bad"><span>{t('pos.dueOnAccount')}</span><span>{money(due)}</span></div>}
           </div>
           <button className="btn btn-primary btn-block btn-lg" disabled={busy || !cart.length} onClick={checkout}>
-            {busy ? 'Processing…' : `Complete sale · ${money(total)}`}
+            {busy ? t('pos.processing') : t('pos.complete', { total: money(total) })}
           </button>
         </div>
       </div>

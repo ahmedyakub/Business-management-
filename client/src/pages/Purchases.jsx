@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import api, { errorMessage } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useLang } from '../context/LanguageContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import Modal from '../components/Modal.jsx';
 import { DateRange, Empty, Loading, PageHeader, Status } from '../components/ui.jsx';
@@ -8,6 +9,7 @@ import { fmtDate, monthStart, toInputDate, useMoney } from '../utils/format.js';
 
 export default function Purchases() {
   const { can } = useAuth();
+  const { t } = useLang();
   const toast = useToast();
   const money = useMoney();
   const [purchases, setPurchases] = useState(null);
@@ -43,7 +45,7 @@ export default function Purchases() {
     e.preventDefault();
     try {
       await api.post('/purchases', { ...form, items: form.items.filter((i) => i.product) });
-      toast('Purchase recorded and stock updated');
+      toast(t('purchases.saved'));
       setForm(null);
       load();
     } catch (err) {
@@ -53,16 +55,16 @@ export default function Purchases() {
 
   return (
     <>
-      <PageHeader title="Purchases" subtitle="Stock received from suppliers">
+      <PageHeader title={t('nav.purchases')} subtitle={t('purchases.subtitle')}>
         <DateRange {...range} onChange={setRange} />
-        {can('purchases:write') && <button className="btn btn-primary" onClick={openForm}>+ New purchase</button>}
+        {can('purchases:write') && <button className="btn btn-primary" onClick={openForm}>{t('purchases.add')}</button>}
       </PageHeader>
 
       <div className="card">
-        {!purchases ? <Loading /> : purchases.length === 0 ? <Empty>No purchases in this period.</Empty> : (
+        {!purchases ? <Loading /> : purchases.length === 0 ? <Empty>{t('purchases.none')}</Empty> : (
           <div className="table-wrap">
             <table>
-              <thead><tr><th>Ref</th><th>Date</th><th>Supplier</th><th>Items</th><th>Status</th><th className="right">Total</th><th className="right">Paid</th></tr></thead>
+              <thead><tr><th>{t('party.ref')}</th><th>{t('common.date')}</th><th>{t('common.supplier')}</th><th>{t('common.items')}</th><th>{t('common.status')}</th><th className="right">{t('common.total')}</th><th className="right">{t('common.paid')}</th></tr></thead>
               <tbody>
                 {purchases.map((p) => (
                   <tr key={p._id} className="clickable" onClick={() => setViewing(p)}>
@@ -82,10 +84,10 @@ export default function Purchases() {
       </div>
 
       {viewing && (
-        <Modal title={`Purchase ${viewing.reference}`} onClose={() => setViewing(null)}>
+        <Modal title={t('purchases.viewTitle', { ref: viewing.reference })} onClose={() => setViewing(null)}>
           <p>{viewing.supplier?.name} · {fmtDate(viewing.date)} · <Status value={viewing.status} /></p>
           <table>
-            <thead><tr><th>Product</th><th className="right">Qty</th><th className="right">Unit cost</th><th className="right">Total</th></tr></thead>
+            <thead><tr><th>{t('common.product')}</th><th className="right">{t('common.qty')}</th><th className="right">{t('common.unitCost')}</th><th className="right">{t('common.total')}</th></tr></thead>
             <tbody>
               {viewing.items.map((i, idx) => (
                 <tr key={idx}><td>{i.name}</td><td className="right">{i.quantity}</td><td className="right">{money(i.unitCost)}</td><td className="right">{money(i.total)}</td></tr>
@@ -93,26 +95,26 @@ export default function Purchases() {
             </tbody>
           </table>
           <div className="totals">
-            <div className="grand"><span>Total</span><span>{money(viewing.total)}</span></div>
-            <div><span>Paid</span><span>{money(viewing.amountPaid)}</span></div>
+            <div className="grand"><span>{t('common.total')}</span><span>{money(viewing.total)}</span></div>
+            <div><span>{t('common.paid')}</span><span>{money(viewing.amountPaid)}</span></div>
           </div>
-          {viewing.notes && <p className="small">Notes: {viewing.notes}</p>}
+          {viewing.notes && <p className="small">{t('common.notes')}: {viewing.notes}</p>}
         </Modal>
       )}
 
       {form && (
-        <Modal title="New purchase" onClose={() => setForm(null)} wide>
-          {suppliers.length === 0 ? <Empty>Add a supplier first.</Empty> : (
+        <Modal title={t('purchases.newTitle')} onClose={() => setForm(null)} wide>
+          {suppliers.length === 0 ? <Empty>{t('purchases.addSupplierFirst')}</Empty> : (
             <form onSubmit={save} className="form-grid">
-              <label>Supplier *
+              <label>{t('common.supplier')} *
                 <select value={form.supplier} onChange={(e) => setForm((f) => ({ ...f, supplier: e.target.value }))} required>
                   {suppliers.map((s) => <option key={s._id} value={s._id}>{s.name}</option>)}
                 </select>
               </label>
-              <label>Date<input type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} /></label>
+              <label>{t('common.date')}<input type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} /></label>
               <div className="full">
                 <table className="cart-table">
-                  <thead><tr><th>Product</th><th>Qty</th><th>Unit cost</th><th className="right">Total</th><th /></tr></thead>
+                  <thead><tr><th>{t('common.product')}</th><th>{t('common.qty')}</th><th>{t('common.unitCost')}</th><th className="right">{t('common.total')}</th><th /></tr></thead>
                   <tbody>
                     {form.items.map((it, idx) => (
                       <tr key={idx}>
@@ -121,8 +123,8 @@ export default function Purchases() {
                             const p = products.find((x) => x._id === e.target.value);
                             setItem(idx, { product: e.target.value, unitCost: p ? p.purchasePrice : '' });
                           }}>
-                            <option value="">Select product…</option>
-                            {products.map((p) => <option key={p._id} value={p._id}>{p.name} ({p.sku}) — stock {p.quantity}</option>)}
+                            <option value="">{t('purchases.selectProduct')}</option>
+                            {products.map((p) => <option key={p._id} value={p._id}>{p.name} ({p.sku}) — {t('purchases.stockN', { q: p.quantity })}</option>)}
                           </select>
                         </td>
                         <td><input type="number" min="1" step="1" value={it.quantity} onChange={(e) => setItem(idx, { quantity: e.target.value })} required /></td>
@@ -133,18 +135,18 @@ export default function Purchases() {
                     ))}
                   </tbody>
                 </table>
-                <button type="button" className="btn btn-light btn-sm" onClick={() => setForm((f) => ({ ...f, items: [...f.items, { product: '', quantity: 1, unitCost: '' }] }))}>+ Add line</button>
+                <button type="button" className="btn btn-light btn-sm" onClick={() => setForm((f) => ({ ...f, items: [...f.items, { product: '', quantity: 1, unitCost: '' }] }))}>{t('purchases.addLine')}</button>
               </div>
-              <label>Amount paid now<input type="number" min="0" step="any" value={form.amountPaid} onChange={(e) => setForm((f) => ({ ...f, amountPaid: e.target.value }))} /></label>
-              <label>Notes<input value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} /></label>
-              <label className="inline full"><input type="checkbox" checked={form.updateCostPrice} onChange={(e) => setForm((f) => ({ ...f, updateCostPrice: e.target.checked }))} /> Update product purchase prices to these costs</label>
+              <label>{t('purchases.paidNow')}<input type="number" min="0" step="any" value={form.amountPaid} onChange={(e) => setForm((f) => ({ ...f, amountPaid: e.target.value }))} /></label>
+              <label>{t('common.notes')}<input value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} /></label>
+              <label className="inline full"><input type="checkbox" checked={form.updateCostPrice} onChange={(e) => setForm((f) => ({ ...f, updateCostPrice: e.target.checked }))} /> {t('purchases.updateCost')}</label>
               <div className="totals full">
-                <div className="grand"><span>Total</span><span>{money(total)}</span></div>
-                <div><span>Added to supplier balance</span><span>{money(Math.max(total - (Number(form.amountPaid) || 0), 0))}</span></div>
+                <div className="grand"><span>{t('common.total')}</span><span>{money(total)}</span></div>
+                <div><span>{t('purchases.addedToBalance')}</span><span>{money(Math.max(total - (Number(form.amountPaid) || 0), 0))}</span></div>
               </div>
               <div className="form-actions full">
-                <button type="button" className="btn btn-light" onClick={() => setForm(null)}>Cancel</button>
-                <button className="btn btn-primary">Save purchase</button>
+                <button type="button" className="btn btn-light" onClick={() => setForm(null)}>{t('common.cancel')}</button>
+                <button className="btn btn-primary">{t('purchases.save')}</button>
               </div>
             </form>
           )}

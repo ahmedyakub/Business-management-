@@ -16,6 +16,7 @@ An all-in-one MERN (MongoDB, Express, React, Node.js) application for managing i
 | 🔔 **Low-stock alerts** | Notifications created automatically when a product reaches its minimum level and cleared when restocked; bell badge, dashboard widget, low-stock filter |
 | 🔐 **Users & Roles** | Admin, Manager, Cashier and Inventory roles enforced on both the API and UI |
 | ⚙️ **Settings** | Business name, address, tax ID, currency and default tax rate printed on invoices |
+| 🌐 **Languages** | English and Somali (Af-Soomaali), switched with the **EN / SO** button in the top bar or on the login page |
 
 ### Roles
 
@@ -27,6 +28,14 @@ An all-in-one MERN (MongoDB, Express, React, Node.js) application for managing i
 | **Inventory** | Products, categories, suppliers, purchases, supplier payments and inventory valuation |
 
 Permissions are defined in [`server/src/config/permissions.js`](server/src/config/permissions.js).
+
+## Languages / Luqadaha
+
+The interface is available in **English** and **Somali (Af-Soomaali)**. Use the **EN | SO** switch in the top bar (or on the login page). The choice is saved in the browser; on first visit the app follows the browser language.
+
+Translations live in [`client/src/i18n/en.js`](client/src/i18n/en.js) and [`client/src/i18n/so.js`](client/src/i18n/so.js); both files must have the same keys. To add a language, copy `en.js`, translate the values and register it in `client/src/context/LanguageContext.jsx`.
+
+Not yet translated: error messages that come from the API and the downloadable PDF invoice (the on-screen invoice is translated).
 
 ## Tech stack
 

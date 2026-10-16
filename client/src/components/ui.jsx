@@ -1,3 +1,5 @@
+import { useLang } from '../context/LanguageContext.jsx';
+
 export function PageHeader({ title, subtitle, children }) {
   return (
     <div className="page-header">
@@ -21,20 +23,24 @@ export function StatCard({ label, value, tone, hint }) {
 }
 
 export function Status({ value }) {
-  return <span className={`status status-${value}`}>{value}</span>;
+  const { t } = useLang();
+  return <span className={`status status-${value}`}>{t(`status.${value}`)}</span>;
 }
 
-export function Empty({ children = 'Nothing here yet.' }) {
-  return <div className="empty">{children}</div>;
+export function Empty({ children }) {
+  const { t } = useLang();
+  return <div className="empty">{children ?? t('common.empty')}</div>;
 }
 
 export function Loading() {
-  return <div className="empty">Loading…</div>;
+  const { t } = useLang();
+  return <div className="empty">{t('common.loading')}</div>;
 }
 
 // Simple horizontal-axis bar chart drawn with CSS.
 export function BarChart({ data, valueKey = 'total', labelKey = 'date', format = (v) => v }) {
-  if (!data?.length) return <Empty>No data for this period.</Empty>;
+  const { t } = useLang();
+  if (!data?.length) return <Empty>{t('common.noData')}</Empty>;
   const max = Math.max(...data.map((d) => d[valueKey]), 1);
   return (
     <div className="bar-chart">
@@ -50,10 +56,11 @@ export function BarChart({ data, valueKey = 'total', labelKey = 'date', format =
 }
 
 export function DateRange({ from, to, onChange }) {
+  const { t } = useLang();
   return (
     <div className="date-range">
-      <label>From <input type="date" value={from} onChange={(e) => onChange({ from: e.target.value, to })} /></label>
-      <label>To <input type="date" value={to} onChange={(e) => onChange({ from, to: e.target.value })} /></label>
+      <label>{t('common.from')} <input type="date" value={from} onChange={(e) => onChange({ from: e.target.value, to })} /></label>
+      <label>{t('common.to')} <input type="date" value={to} onChange={(e) => onChange({ from, to: e.target.value })} /></label>
     </div>
   );
 }

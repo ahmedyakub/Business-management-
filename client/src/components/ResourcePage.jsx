@@ -2,14 +2,16 @@ import { useCallback, useEffect, useState } from 'react';
 import api, { errorMessage } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
+import { useLang } from '../context/LanguageContext.jsx';
 import Modal from './Modal.jsx';
 import { Empty, Loading, PageHeader } from './ui.jsx';
 
 // Generic list + create/edit/delete page driven by a field/column config.
 export default function ResourcePage({
-  title, subtitle, endpoint, resource, fields, columns, searchable = true, emptyItem = {}, onRowClick, extraParams, toolbar, canWrite,
+  title, singular, subtitle, endpoint, resource, fields, columns, searchable = true, emptyItem = {}, onRowClick, extraParams, toolbar, canWrite,
 }) {
   const { can } = useAuth();
+  const { t } = useLang();
   const toast = useToast();
   const [items, setItems] = useState(null);
   const [search, setSearch] = useState('');
@@ -34,7 +36,7 @@ export default function ResourcePage({
     try {
       if (editing._id) await api.put(`${endpoint}/${editing._id}`, editing);
       else await api.post(endpoint, editing);
-      toast(`${editing._id ? 'Updated' : 'Created'} successfully`);
+      toast(t(editing._id ? 'common.updatedOk' : 'common.createdOk'));
       setEditing(null);
       load();
     } catch (err) {
@@ -45,10 +47,10 @@ export default function ResourcePage({
   };
 
   const remove = async (item) => {
-    if (!window.confirm('Delete this record? This cannot be undone.')) return;
+    if (!window.confirm(t('common.confirmDelete'))) return;
     try {
       const { data } = await api.delete(`${endpoint}/${item._id}`);
-      toast(data.message || 'Deleted');
+      toast(data.message || t('common.deleted'));
       load();
     } catch (err) {
       toast(errorMessage(err), 'error');
@@ -61,8 +63,8 @@ export default function ResourcePage({
     <>
       <PageHeader title={title} subtitle={subtitle}>
         {toolbar}
-        {searchable && <input className="search" placeholder="Search…" value={search} onChange={(e) => setSearch(e.target.value)} />}
-        {writable && <button className="btn btn-primary" onClick={() => setEditing({ ...emptyItem })}>+ Add</button>}
+        {searchable && <input className="search" placeholder={t('common.search')} value={search} onChange={(e) => setSearch(e.target.value)} />}
+        {writable && <button className="btn btn-primary" onClick={() => setEditing({ ...emptyItem })}>{t('common.add')}</button>}
       </PageHeader>
 
       <div className="card">
@@ -72,7 +74,7 @@ export default function ResourcePage({
               <thead>
                 <tr>
                   {columns.map((c) => <th key={c.key} className={c.align === 'right' ? 'right' : ''}>{c.label}</th>)}
-                  {writable && <th className="right">Actions</th>}
+                  {writable && <th className="right">{t('common.actions')}</th>}
                 </tr>
               </thead>
               <tbody>
@@ -83,8 +85,8 @@ export default function ResourcePage({
                     ))}
                     {writable && (
                       <td className="right nowrap" onClick={(e) => e.stopPropagation()}>
-                        <button className="btn btn-light btn-sm" onClick={() => setEditing({ ...item })}>Edit</button>{' '}
-                        <button className="btn btn-danger btn-sm" onClick={() => remove(item)}>Delete</button>
+                        <button className="btn btn-light btn-sm" onClick={() => setEditing({ ...item })}>{t('common.edit')}</button>{' '}
+                        <button className="btn btn-danger btn-sm" onClick={() => remove(item)}>{t('common.delete')}</button>
                       </td>
                     )}
                   </tr>
@@ -96,7 +98,7 @@ export default function ResourcePage({
       </div>
 
       {editing && (
-        <Modal title={`${editing._id ? 'Edit' : 'New'} ${title.replace(/s$/, '')}`} onClose={() => setEditing(null)}>
+        <Modal title={t(editing._id ? 'common.editX' : 'common.newX', { x: singular })} onClose={() => setEditing(null)}>
           <form onSubmit={save} className="form-grid">
             {fields.filter((f) => !f.hidden?.(editing)).map((f) => (
               <label key={f.name} className={f.full ? 'full' : ''}>
@@ -127,8 +129,8 @@ export default function ResourcePage({
               </label>
             ))}
             <div className="form-actions full">
-              <button type="button" className="btn btn-light" onClick={() => setEditing(null)}>Cancel</button>
-              <button className="btn btn-primary" disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
+              <button type="button" className="btn btn-light" onClick={() => setEditing(null)}>{t('common.cancel')}</button>
+              <button className="btn btn-primary" disabled={saving}>{saving ? t('common.saving') : t('common.save')}</button>
             </div>
           </form>
         </Modal>
