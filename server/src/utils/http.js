@@ -1,7 +1,12 @@
+import { translate } from '../i18n/index.js';
+
+// An error with an HTTP status and a message key; the error handler translates it per request.
 export class HttpError extends Error {
-  constructor(status, message) {
-    super(message);
+  constructor(status, key, vars) {
+    super(translate('en', key, vars));
     this.status = status;
+    this.key = key;
+    this.vars = vars;
   }
 }
 

@@ -7,17 +7,17 @@ export async function authenticate(req, res, next) {
   try {
     const header = req.headers.authorization || '';
     const token = header.startsWith('Bearer ') ? header.slice(7) : null;
-    if (!token) throw new HttpError(401, 'Authentication required');
+    if (!token) throw new HttpError(401, 'errors.authRequired');
 
     let payload;
     try {
       payload = jwt.verify(token, process.env.JWT_SECRET);
     } catch {
-      throw new HttpError(401, 'Invalid or expired token');
+      throw new HttpError(401, 'errors.invalidToken');
     }
 
     const user = await User.findById(payload.id);
-    if (!user || !user.active) throw new HttpError(401, 'Account not found or disabled');
+    if (!user || !user.active) throw new HttpError(401, 'errors.accountDisabledOrMissing');
     req.user = user;
     next();
   } catch (err) {
@@ -27,6 +27,6 @@ export async function authenticate(req, res, next) {
 
 export const authorize = (...permissions) => (req, res, next) => {
   const ok = permissions.some((p) => hasPermission(req.user.role, p));
-  if (!ok) return next(new HttpError(403, 'You do not have permission to perform this action'));
+  if (!ok) return next(new HttpError(403, 'errors.forbidden'));
   next();
 };

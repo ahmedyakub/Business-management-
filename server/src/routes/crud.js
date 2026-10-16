@@ -39,7 +39,7 @@ export function crudRouter(Model, {
 
   router.get('/:id', read, asyncHandler(async (req, res) => {
     const item = await Model.findById(req.params.id);
-    if (!item) throw new HttpError(404, 'Not found');
+    if (!item) throw new HttpError(404, 'errors.notFound');
     res.json(item);
   }));
 
@@ -51,15 +51,15 @@ export function crudRouter(Model, {
 
   router.put('/:id', write, asyncHandler(async (req, res) => {
     const item = await Model.findByIdAndUpdate(req.params.id, clean(req.body), { new: true, runValidators: true });
-    if (!item) throw new HttpError(404, 'Not found');
+    if (!item) throw new HttpError(404, 'errors.notFound');
     res.json(item);
   }));
 
   router.delete('/:id', write, asyncHandler(async (req, res) => {
     if (beforeDelete) await beforeDelete(req.params.id);
     const item = await Model.findByIdAndDelete(req.params.id);
-    if (!item) throw new HttpError(404, 'Not found');
-    res.json({ message: 'Deleted' });
+    if (!item) throw new HttpError(404, 'errors.notFound');
+    res.json({ message: req.t('msg.deleted') });
   }));
 
   return router;

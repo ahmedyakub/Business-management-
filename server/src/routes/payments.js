@@ -45,27 +45,27 @@ async function allocate(Model, filter, amount) {
 router.post('/', authorize('payments:write', 'purchases:write'), asyncHandler(async (req, res) => {
   const { partyType, partyId, amount, method = 'cash', note, date } = req.body;
   const value = round2(Number(amount));
-  if (!Number.isFinite(value) || value <= 0) throw new HttpError(400, 'Amount must be greater than zero');
+  if (!Number.isFinite(value) || value <= 0) throw new HttpError(400, 'errors.amountPositive');
 
   let payment;
   if (partyType === 'customer') {
-    if (!hasPermission(req.user.role, 'payments:write')) throw new HttpError(403, 'You do not have permission to record customer payments');
+    if (!hasPermission(req.user.role, 'payments:write')) throw new HttpError(403, 'errors.noCustomerPaymentPerm');
     const customer = await Customer.findById(partyId);
-    if (!customer) throw new HttpError(404, 'Customer not found');
-    if (value > round2(customer.balance)) throw new HttpError(400, `Amount exceeds outstanding balance (${round2(customer.balance)})`);
+    if (!customer) throw new HttpError(404, 'errors.customerNotFound');
+    if (value > round2(customer.balance)) throw new HttpError(400, 'errors.exceedsBalance', { balance: round2(customer.balance) });
     payment = await Payment.create({ partyType, customer: customer._id, amount: value, method, note, date, createdBy: req.user._id });
     await Customer.updateOne({ _id: customer._id }, { $inc: { balance: -value } });
     await allocate(Sale, { customer: customer._id }, value);
   } else if (partyType === 'supplier') {
-    if (!hasPermission(req.user.role, 'purchases:write')) throw new HttpError(403, 'You do not have permission to record supplier payments');
+    if (!hasPermission(req.user.role, 'purchases:write')) throw new HttpError(403, 'errors.noSupplierPaymentPerm');
     const supplier = await Supplier.findById(partyId);
-    if (!supplier) throw new HttpError(404, 'Supplier not found');
-    if (value > round2(supplier.balance)) throw new HttpError(400, `Amount exceeds outstanding balance (${round2(supplier.balance)})`);
+    if (!supplier) throw new HttpError(404, 'errors.supplierNotFound');
+    if (value > round2(supplier.balance)) throw new HttpError(400, 'errors.exceedsBalance', { balance: round2(supplier.balance) });
     payment = await Payment.create({ partyType, supplier: supplier._id, amount: value, method, note, date, createdBy: req.user._id });
     await Supplier.updateOne({ _id: supplier._id }, { $inc: { balance: -value } });
     await allocate(Purchase, { supplier: supplier._id }, value);
   } else {
-    throw new HttpError(400, 'partyType must be "customer" or "supplier"');
+    throw new HttpError(400, 'errors.invalidPartyType');
   }
   res.status(201).json(payment);
 }));

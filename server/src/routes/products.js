@@ -31,7 +31,7 @@ router.get('/', authorize('products:read'), asyncHandler(async (req, res) => {
 
 router.get('/:id', authorize('products:read'), asyncHandler(async (req, res) => {
   const product = await Product.findById(req.params.id).populate('category', 'name');
-  if (!product) throw new HttpError(404, 'Product not found');
+  if (!product) throw new HttpError(404, 'errors.productNotFound');
   res.json(product);
 }));
 
@@ -43,7 +43,7 @@ router.post('/', authorize('products:write'), asyncHandler(async (req, res) => {
 
 router.put('/:id', authorize('products:write'), asyncHandler(async (req, res) => {
   const product = await Product.findByIdAndUpdate(req.params.id, pick(req.body), { new: true, runValidators: true }).populate('category', 'name');
-  if (!product) throw new HttpError(404, 'Product not found');
+  if (!product) throw new HttpError(404, 'errors.productNotFound');
   await checkLowStock(product);
   res.json(product);
 }));
@@ -51,13 +51,13 @@ router.put('/:id', authorize('products:write'), asyncHandler(async (req, res) =>
 // Manual stock adjustment (stock take, damage, returns...). Positive or negative "change".
 router.post('/:id/adjust', authorize('products:write'), asyncHandler(async (req, res) => {
   const change = Number(req.body.change);
-  if (!Number.isFinite(change) || change === 0) throw new HttpError(400, 'Adjustment must be a non-zero number');
+  if (!Number.isFinite(change) || change === 0) throw new HttpError(400, 'errors.adjustmentNonZero');
   const product = await Product.findOneAndUpdate(
     { _id: req.params.id, quantity: { $gte: change < 0 ? -change : 0 } },
     { $inc: { quantity: change } },
     { new: true }
   ).populate('category', 'name');
-  if (!product) throw new HttpError(400, 'Product not found or adjustment would make stock negative');
+  if (!product) throw new HttpError(400, 'errors.adjustmentNegative');
   await checkLowStock(product);
   res.json(product);
 }));
@@ -67,11 +67,11 @@ router.delete('/:id', authorize('products:write'), asyncHandler(async (req, res)
   if (used) {
     // Keep history intact: deactivate instead of deleting.
     await Product.findByIdAndUpdate(req.params.id, { active: false });
-    return res.json({ message: 'Product has transaction history and was deactivated instead of deleted' });
+    return res.json({ message: req.t('msg.productDeactivated') });
   }
   const product = await Product.findByIdAndDelete(req.params.id);
-  if (!product) throw new HttpError(404, 'Product not found');
-  res.json({ message: 'Deleted' });
+  if (!product) throw new HttpError(404, 'errors.productNotFound');
+  res.json({ message: req.t('msg.deleted') });
 }));
 
 export default router;

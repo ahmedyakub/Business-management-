@@ -17,7 +17,7 @@ router.get('/', asyncHandler(async (req, res) => {
 
 router.put('/read-all', asyncHandler(async (req, res) => {
   await Notification.updateMany({ read: false }, { read: true });
-  res.json({ message: 'All notifications marked as read' });
+  res.json({ message: req.t('msg.allRead') });
 }));
 
 router.put('/:id/read', asyncHandler(async (req, res) => {
