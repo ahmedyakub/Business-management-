@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { errorMessage } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useLang } from '../context/LanguageContext.jsx';
+import LanguageSwitch from '../components/LanguageSwitch.jsx';
 
 export default function Login() {
   const { login } = useAuth();
+  const { t } = useLang();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -25,13 +28,14 @@ export default function Login() {
   return (
     <div className="login-page">
       <form className="login-card" onSubmit={submit}>
-        <h1>Business Manager</h1>
-        <p className="muted">Inventory, sales &amp; finance in one place</p>
+        <LanguageSwitch />
+        <h1>{t('appName')}</h1>
+        <p className="muted">{t('login.subtitle')}</p>
         {error && <div className="alert alert-error">{error}</div>}
-        <label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus /></label>
-        <label>Password<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
-        <button className="btn btn-primary btn-block" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
-        <p className="muted small">Demo: admin@example.com / admin123 (after running <code>npm run seed</code>)</p>
+        <label>{t('common.email')}<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus /></label>
+        <label>{t('login.password')}<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
+        <button className="btn btn-primary btn-block" disabled={busy}>{busy ? t('login.signingIn') : t('login.signIn')}</button>
+        <p className="muted small">{t('login.demo')} admin@example.com / admin123</p>
       </form>
     </div>
   );

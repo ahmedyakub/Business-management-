@@ -2,15 +2,18 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import api, { errorMessage } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useLang } from '../context/LanguageContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import Modal from '../components/Modal.jsx';
 import { Empty, Loading, PageHeader, StatCard, Status } from '../components/ui.jsx';
-import { capitalize, fmtDate, toInputDate, useMoney } from '../utils/format.js';
+import { PAYMENT_METHODS } from './Expenses.jsx';
+import { fmtDate, toInputDate, useMoney } from '../utils/format.js';
 
 // Detail page for a customer or supplier: contact info, balance, transaction and payment history.
 export default function PartyDetail({ type }) {
   const { id } = useParams();
   const { can } = useAuth();
+  const { t } = useLang();
   const toast = useToast();
   const money = useMoney();
   const [party, setParty] = useState(null);
@@ -42,7 +45,7 @@ export default function PartyDetail({ type }) {
     e.preventDefault();
     try {
       await api.post('/payments', { partyType: type, partyId: id, ...paying });
-      toast('Payment recorded');
+      toast(t('party.recorded'));
       setPaying(null);
       load();
     } catch (err) {
@@ -56,29 +59,29 @@ export default function PartyDetail({ type }) {
   return (
     <>
       <PageHeader title={party.name} subtitle={[party.contactPerson, party.phone, party.email, party.address].filter(Boolean).join(' · ')}>
-        <Link to={`/${type}s`} className="btn btn-light">← Back</Link>
+        <Link to={`/${type}s`} className="btn btn-light">{t('common.back')}</Link>
         {canPay && party.balance > 0 && (
           <button className="btn btn-primary" onClick={() => setPaying({ amount: party.balance, method: 'cash', note: '', date: toInputDate() })}>
-            {isCustomer ? 'Receive payment' : 'Pay supplier'}
+            {isCustomer ? t('party.receive') : t('party.pay')}
           </button>
         )}
       </PageHeader>
 
       <div className="stats">
-        <StatCard label={isCustomer ? 'Outstanding balance (owes us)' : 'Outstanding balance (we owe)'} value={money(party.balance)} tone={party.balance > 0 ? 'warn' : 'good'} />
-        <StatCard label={isCustomer ? 'Total purchases' : 'Total supplied'} value={money(totalDocs)} hint={`${docs.length} ${isCustomer ? 'invoices' : 'purchase orders'}`} />
-        <StatCard label="Total payments recorded" value={money(payments.reduce((s, p) => s + p.amount, 0))} hint={`${payments.length} payments`} />
+        <StatCard label={isCustomer ? t('party.balCustomer') : t('party.balSupplier')} value={money(party.balance)} tone={party.balance > 0 ? 'warn' : 'good'} />
+        <StatCard label={isCustomer ? t('party.totalPurchases') : t('party.totalSupplied')} value={money(totalDocs)} hint={t(isCustomer ? 'party.invoicesN' : 'party.posN', { n: docs.length })} />
+        <StatCard label={t('party.totalPayments')} value={money(payments.reduce((s, p) => s + p.amount, 0))} hint={t('party.paymentsN', { n: payments.length })} />
       </div>
 
-      {party.notes && <div className="card"><strong>Notes:</strong> {party.notes}</div>}
+      {party.notes && <div className="card"><strong>{t('common.notes')}:</strong> {party.notes}</div>}
 
       <div className="grid-2">
         {canSeeDocs && (
           <div className="card">
-            <h3>{isCustomer ? 'Invoices' : 'Purchases'}</h3>
+            <h3>{isCustomer ? t('party.invoices') : t('party.purchases')}</h3>
             {docs.length === 0 ? <Empty /> : (
               <table>
-                <thead><tr><th>{isCustomer ? 'Invoice' : 'Ref'}</th><th>Date</th><th>Status</th><th className="right">Total</th><th className="right">Paid</th></tr></thead>
+                <thead><tr><th>{isCustomer ? t('common.invoice') : t('party.ref')}</th><th>{t('common.date')}</th><th>{t('common.status')}</th><th className="right">{t('common.total')}</th><th className="right">{t('common.paid')}</th></tr></thead>
                 <tbody>
                   {docs.map((d) => (
                     <tr key={d._id}>
@@ -96,15 +99,15 @@ export default function PartyDetail({ type }) {
         )}
         {can('payments:read') && (
           <div className="card">
-            <h3>Payment history</h3>
-            {payments.length === 0 ? <Empty>No balance payments recorded.</Empty> : (
+            <h3>{t('party.paymentHistory')}</h3>
+            {payments.length === 0 ? <Empty>{t('party.noPayments')}</Empty> : (
               <table>
-                <thead><tr><th>Date</th><th>Method</th><th>Note</th><th className="right">Amount</th></tr></thead>
+                <thead><tr><th>{t('common.date')}</th><th>{t('common.method')}</th><th>{t('common.note')}</th><th className="right">{t('common.amount')}</th></tr></thead>
                 <tbody>
                   {payments.map((p) => (
                     <tr key={p._id}>
                       <td>{fmtDate(p.date)}</td>
-                      <td>{capitalize(p.method)}</td>
+                      <td>{t(`method.${p.method}`)}</td>
                       <td>{p.note}</td>
                       <td className="right">{money(p.amount)}</td>
                     </tr>
@@ -117,20 +120,20 @@ export default function PartyDetail({ type }) {
       </div>
 
       {paying && (
-        <Modal title={isCustomer ? 'Receive payment' : 'Pay supplier'} onClose={() => setPaying(null)}>
+        <Modal title={isCustomer ? t('party.receive') : t('party.pay')} onClose={() => setPaying(null)}>
           <form className="form-grid" onSubmit={pay}>
-            <label>Amount *<input type="number" min="0.01" max={party.balance} step="any" value={paying.amount} onChange={(e) => setPaying((p) => ({ ...p, amount: e.target.value }))} required /></label>
-            <label>Method
+            <label>{t('common.amount')} *<input type="number" min="0.01" max={party.balance} step="any" value={paying.amount} onChange={(e) => setPaying((p) => ({ ...p, amount: e.target.value }))} required /></label>
+            <label>{t('common.method')}
               <select value={paying.method} onChange={(e) => setPaying((p) => ({ ...p, method: e.target.value }))}>
-                {['cash', 'card', 'bank', 'mobile'].map((m) => <option key={m} value={m}>{capitalize(m)}</option>)}
+                {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{t(`method.${m}`)}</option>)}
               </select>
             </label>
-            <label>Date<input type="date" value={paying.date} onChange={(e) => setPaying((p) => ({ ...p, date: e.target.value }))} /></label>
-            <label>Note<input value={paying.note} onChange={(e) => setPaying((p) => ({ ...p, note: e.target.value }))} /></label>
-            <p className="muted full">Payments are applied to the oldest unpaid {isCustomer ? 'invoices' : 'purchases'} first.</p>
+            <label>{t('common.date')}<input type="date" value={paying.date} onChange={(e) => setPaying((p) => ({ ...p, date: e.target.value }))} /></label>
+            <label>{t('common.note')}<input value={paying.note} onChange={(e) => setPaying((p) => ({ ...p, note: e.target.value }))} /></label>
+            <p className="muted full">{t(isCustomer ? 'party.fifoCustomer' : 'party.fifoSupplier')}</p>
             <div className="form-actions full">
-              <button type="button" className="btn btn-light" onClick={() => setPaying(null)}>Cancel</button>
-              <button className="btn btn-primary">Record payment</button>
+              <button type="button" className="btn btn-light" onClick={() => setPaying(null)}>{t('common.cancel')}</button>
+              <button className="btn btn-primary">{t('party.record')}</button>
             </div>
           </form>
         </Modal>

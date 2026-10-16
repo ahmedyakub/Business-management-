@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from './context/AuthContext.jsx';
+import { useLang } from './context/LanguageContext.jsx';
 import Layout from './components/Layout.jsx';
 import RequirePermission from './components/ProtectedRoute.jsx';
 import Login from './pages/Login.jsx';
@@ -24,7 +25,8 @@ const guard = (perm, el) => <RequirePermission perm={perm}>{el}</RequirePermissi
 
 export default function App() {
   const { user, loading } = useAuth();
-  if (loading) return <div className="splash">Loading…</div>;
+  const { t } = useLang();
+  if (loading) return <div className="splash">{t('common.loading')}</div>;
   if (!user) {
     return (
       <Routes>
@@ -52,7 +54,7 @@ export default function App() {
         <Route path="notifications" element={guard('notifications:read', <Notifications />)} />
         <Route path="settings" element={guard('settings:write', <Settings />)} />
         <Route path="account" element={<Account />} />
-        <Route path="forbidden" element={<div className="card empty">You do not have permission to view this page.</div>} />
+        <Route path="forbidden" element={<div className="card empty">{t('common.forbidden')}</div>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

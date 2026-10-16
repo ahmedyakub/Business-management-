@@ -12,8 +12,21 @@ export function useMoney() {
   };
 }
 
-export const fmtDate = (d) => (d ? new Date(d).toLocaleDateString() : '');
-export const fmtDateTime = (d) => (d ? new Date(d).toLocaleString() : '');
+// Locale for date formatting; set by LanguageProvider when the language changes.
+let dateLocale;
+export function setDateLocale(locale) {
+  dateLocale = locale;
+}
+
+const safeDate = (d, fn) => {
+  try {
+    return fn(dateLocale);
+  } catch {
+    return fn(undefined);
+  }
+};
+export const fmtDate = (d) => (d ? safeDate(d, (l) => new Date(d).toLocaleDateString(l)) : '');
+export const fmtDateTime = (d) => (d ? safeDate(d, (l) => new Date(d).toLocaleString(l)) : '');
 export const toInputDate = (d = new Date()) => {
   const x = new Date(d);
   return new Date(x.getTime() - x.getTimezoneOffset() * 60000).toISOString().slice(0, 10);

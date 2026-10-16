@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import api, { errorMessage } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useLang } from '../context/LanguageContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import Modal from '../components/Modal.jsx';
 import { Empty, Loading, PageHeader } from '../components/ui.jsx';
@@ -10,6 +11,7 @@ const EMPTY = { name: '', sku: '', barcode: '', category: '', unit: 'pcs', purch
 
 export default function Products() {
   const { can } = useAuth();
+  const { t } = useLang();
   const toast = useToast();
   const money = useMoney();
   const [products, setProducts] = useState(null);
@@ -44,7 +46,7 @@ export default function Products() {
       const body = { ...editing, category: editing.category?._id ?? editing.category };
       if (editing._id) await api.put(`/products/${editing._id}`, body);
       else await api.post('/products', body);
-      toast('Product saved');
+      toast(t('products.saved'));
       setEditing(null);
       load();
     } catch (err) {
@@ -57,7 +59,7 @@ export default function Products() {
     try {
       const change = Number(adjusting.change) * (adjusting.direction === 'out' ? -1 : 1);
       await api.post(`/products/${adjusting.product._id}/adjust`, { change });
-      toast('Stock adjusted');
+      toast(t('products.adjusted'));
       setAdjusting(null);
       load();
     } catch (err) {
@@ -66,7 +68,7 @@ export default function Products() {
   };
 
   const remove = async (p) => {
-    if (!window.confirm(`Delete ${p.name}?`)) return;
+    if (!window.confirm(t('products.confirmDelete', { name: p.name }))) return;
     try {
       const { data } = await api.delete(`/products/${p._id}`);
       toast(data.message);
@@ -81,33 +83,33 @@ export default function Products() {
 
   return (
     <>
-      <PageHeader title="Products" subtitle="Inventory items, prices and stock levels">
-        <input className="search" placeholder="Search name, SKU, barcode…" value={filters.search} onChange={(e) => setFilter('search', e.target.value)} />
+      <PageHeader title={t('nav.products')} subtitle={t('products.subtitle')}>
+        <input className="search" placeholder={t('products.search')} value={filters.search} onChange={(e) => setFilter('search', e.target.value)} />
         <select value={filters.category} onChange={(e) => setFilter('category', e.target.value)}>
-          <option value="">All categories</option>
+          <option value="">{t('products.allCategories')}</option>
           {categories.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
         </select>
-        <label className="inline"><input type="checkbox" checked={filters.lowStock} onChange={(e) => setFilter('lowStock', e.target.checked)} /> Low stock only</label>
-        <label className="inline"><input type="checkbox" checked={filters.showInactive} onChange={(e) => setFilter('showInactive', e.target.checked)} /> Show inactive</label>
-        {writable && <button className="btn btn-primary" onClick={() => setEditing({ ...EMPTY })}>+ Add product</button>}
+        <label className="inline"><input type="checkbox" checked={filters.lowStock} onChange={(e) => setFilter('lowStock', e.target.checked)} /> {t('products.lowOnly')}</label>
+        <label className="inline"><input type="checkbox" checked={filters.showInactive} onChange={(e) => setFilter('showInactive', e.target.checked)} /> {t('products.showInactive')}</label>
+        {writable && <button className="btn btn-primary" onClick={() => setEditing({ ...EMPTY })}>{t('products.add')}</button>}
       </PageHeader>
 
       <div className="card">
-        {!products ? <Loading /> : products.length === 0 ? <Empty>No products found.</Empty> : (
+        {!products ? <Loading /> : products.length === 0 ? <Empty>{t('products.none')}</Empty> : (
           <div className="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Product</th><th>SKU</th><th>Category</th>
-                  <th className="right">Cost</th><th className="right">Price</th>
-                  <th className="right">Stock</th><th className="right">Min</th>
-                  {writable && <th className="right">Actions</th>}
+                  <th>{t('common.product')}</th><th>SKU</th><th>{t('common.category')}</th>
+                  <th className="right">{t('products.cost')}</th><th className="right">{t('products.price')}</th>
+                  <th className="right">{t('products.stock')}</th><th className="right">{t('products.min')}</th>
+                  {writable && <th className="right">{t('common.actions')}</th>}
                 </tr>
               </thead>
               <tbody>
                 {products.map((p) => (
                   <tr key={p._id} className={p.active ? '' : 'inactive'}>
-                    <td>{p.name}{!p.active && <span className="muted small"> (inactive)</span>}</td>
+                    <td>{p.name}{!p.active && <span className="muted small"> ({t('common.inactive')})</span>}</td>
                     <td className="mono">{p.sku}</td>
                     <td>{p.category?.name || '—'}</td>
                     <td className="right">{money(p.purchasePrice)}</td>
@@ -118,9 +120,9 @@ export default function Products() {
                     <td className="right">{p.minStock}</td>
                     {writable && (
                       <td className="right nowrap">
-                        <button className="btn btn-light btn-sm" onClick={() => setAdjusting({ product: p, change: 1, direction: 'in' })}>Stock ±</button>{' '}
-                        <button className="btn btn-light btn-sm" onClick={() => setEditing({ ...p, category: p.category?._id || '' })}>Edit</button>{' '}
-                        <button className="btn btn-danger btn-sm" onClick={() => remove(p)}>Delete</button>
+                        <button className="btn btn-light btn-sm" onClick={() => setAdjusting({ product: p, change: 1, direction: 'in' })}>{t('products.adjustBtn')}</button>{' '}
+                        <button className="btn btn-light btn-sm" onClick={() => setEditing({ ...p, category: p.category?._id || '' })}>{t('common.edit')}</button>{' '}
+                        <button className="btn btn-danger btn-sm" onClick={() => remove(p)}>{t('common.delete')}</button>
                       </td>
                     )}
                   </tr>
@@ -132,49 +134,49 @@ export default function Products() {
       </div>
 
       {editing && (
-        <Modal title={editing._id ? 'Edit product' : 'New product'} onClose={() => setEditing(null)}>
+        <Modal title={editing._id ? t('products.editTitle') : t('products.newTitle')} onClose={() => setEditing(null)}>
           <form className="form-grid" onSubmit={save}>
-            <label className="full">Name *<input value={editing.name} onChange={(e) => set('name', e.target.value)} required /></label>
+            <label className="full">{t('common.name')} *<input value={editing.name} onChange={(e) => set('name', e.target.value)} required /></label>
             <label>SKU *<input value={editing.sku} onChange={(e) => set('sku', e.target.value)} required /></label>
-            <label>Barcode<input value={editing.barcode || ''} onChange={(e) => set('barcode', e.target.value)} /></label>
-            <label>Category
+            <label>{t('products.barcode')}<input value={editing.barcode || ''} onChange={(e) => set('barcode', e.target.value)} /></label>
+            <label>{t('common.category')}
               <select value={editing.category || ''} onChange={(e) => set('category', e.target.value)}>
-                <option value="">Uncategorized</option>
+                <option value="">{t('products.uncategorized')}</option>
                 {categories.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
               </select>
             </label>
-            <label>Unit<input value={editing.unit} onChange={(e) => set('unit', e.target.value)} placeholder="pcs, kg, box…" /></label>
-            <label>Purchase price *<input type="number" min="0" step="any" value={editing.purchasePrice} onChange={(e) => set('purchasePrice', e.target.value)} required /></label>
-            <label>Selling price *<input type="number" min="0" step="any" value={editing.sellingPrice} onChange={(e) => set('sellingPrice', e.target.value)} required /></label>
-            <label>{editing._id ? 'Quantity in stock' : 'Opening stock'}<input type="number" min="0" step="1" value={editing.quantity} onChange={(e) => set('quantity', e.target.value)} /></label>
-            <label>Minimum stock (alert level)<input type="number" min="0" step="1" value={editing.minStock} onChange={(e) => set('minStock', e.target.value)} /></label>
-            <label className="full">Description<textarea rows={2} value={editing.description || ''} onChange={(e) => set('description', e.target.value)} /></label>
-            <label className="inline full"><input type="checkbox" checked={editing.active} onChange={(e) => set('active', e.target.checked)} /> Active (available for sale)</label>
+            <label>{t('products.unit')}<input value={editing.unit} onChange={(e) => set('unit', e.target.value)} placeholder={t('products.unitPh')} /></label>
+            <label>{t('products.purchasePrice')} *<input type="number" min="0" step="any" value={editing.purchasePrice} onChange={(e) => set('purchasePrice', e.target.value)} required /></label>
+            <label>{t('products.sellingPrice')} *<input type="number" min="0" step="any" value={editing.sellingPrice} onChange={(e) => set('sellingPrice', e.target.value)} required /></label>
+            <label>{editing._id ? t('products.qtyInStock') : t('products.openingStock')}<input type="number" min="0" step="1" value={editing.quantity} onChange={(e) => set('quantity', e.target.value)} /></label>
+            <label>{t('products.minStock')}<input type="number" min="0" step="1" value={editing.minStock} onChange={(e) => set('minStock', e.target.value)} /></label>
+            <label className="full">{t('common.description')}<textarea rows={2} value={editing.description || ''} onChange={(e) => set('description', e.target.value)} /></label>
+            <label className="inline full"><input type="checkbox" checked={editing.active} onChange={(e) => set('active', e.target.checked)} /> {t('products.activeLabel')}</label>
             {editing.purchasePrice !== '' && editing.sellingPrice !== '' && (
-              <p className="muted full">Margin per unit: {money(editing.sellingPrice - editing.purchasePrice)}</p>
+              <p className="muted full">{t('products.margin', { v: money(editing.sellingPrice - editing.purchasePrice) })}</p>
             )}
             <div className="form-actions full">
-              <button type="button" className="btn btn-light" onClick={() => setEditing(null)}>Cancel</button>
-              <button className="btn btn-primary">Save</button>
+              <button type="button" className="btn btn-light" onClick={() => setEditing(null)}>{t('common.cancel')}</button>
+              <button className="btn btn-primary">{t('common.save')}</button>
             </div>
           </form>
         </Modal>
       )}
 
       {adjusting && (
-        <Modal title={`Adjust stock — ${adjusting.product.name}`} onClose={() => setAdjusting(null)}>
+        <Modal title={t('products.adjustTitle', { name: adjusting.product.name })} onClose={() => setAdjusting(null)}>
           <form className="form-grid" onSubmit={adjust}>
-            <p className="full muted">Current stock: {adjusting.product.quantity} {adjusting.product.unit}. Use Purchases to record stock bought from suppliers.</p>
-            <label>Direction
+            <p className="full muted">{t('products.current', { q: adjusting.product.quantity, u: adjusting.product.unit })}</p>
+            <label>{t('products.direction')}
               <select value={adjusting.direction} onChange={(e) => setAdjusting((a) => ({ ...a, direction: e.target.value }))}>
-                <option value="in">Add stock (+)</option>
-                <option value="out">Remove stock (−) e.g. damage, loss</option>
+                <option value="in">{t('products.addStock')}</option>
+                <option value="out">{t('products.removeStock')}</option>
               </select>
             </label>
-            <label>Quantity<input type="number" min="1" step="1" value={adjusting.change} onChange={(e) => setAdjusting((a) => ({ ...a, change: e.target.value }))} required /></label>
+            <label>{t('products.quantity')}<input type="number" min="1" step="1" value={adjusting.change} onChange={(e) => setAdjusting((a) => ({ ...a, change: e.target.value }))} required /></label>
             <div className="form-actions full">
-              <button type="button" className="btn btn-light" onClick={() => setAdjusting(null)}>Cancel</button>
-              <button className="btn btn-primary">Apply</button>
+              <button type="button" className="btn btn-light" onClick={() => setAdjusting(null)}>{t('common.cancel')}</button>
+              <button className="btn btn-primary">{t('products.apply')}</button>
             </div>
           </form>
         </Modal>
