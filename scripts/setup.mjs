@@ -20,8 +20,9 @@ const fail = (lines) => {
   process.exit(1);
 };
 
+// Commands are fixed strings (no user input), passed whole to the shell so npm.cmd resolves on Windows.
 function run(args, cwd = root) {
-  const res = spawnSync('npm', args, { cwd, stdio: 'inherit', shell: true });
+  const res = spawnSync(`npm ${args.join(' ')}`, { cwd, stdio: 'inherit', shell: true });
   if (res.status !== 0) fail([`Amarkan wuu fashilmay: npm ${args.join(' ')}`, `Command failed: npm ${args.join(' ')}`]);
 }
 
@@ -115,6 +116,6 @@ console.log(`
     Joojinta: Ctrl + C
 `);
 
-const dev = spawn('npm', ['run', 'dev'], { cwd: root, stdio: 'inherit', shell: true });
+const dev = spawn('npm run dev', { cwd: root, stdio: 'inherit', shell: true });
 setTimeout(() => openBrowser(APP_URL), 6000);
 dev.on('exit', (code) => process.exit(code ?? 0));
