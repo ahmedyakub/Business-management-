@@ -57,7 +57,17 @@ Data you enter yourself (product names, the invoice footer in Settings, etc.) is
 - Node.js 18+
 - MongoDB 6+ (local install, Atlas, or `docker compose up -d` using the included `docker-compose.yml`)
 
-### Setup
+### Quick start (one command)
+
+With Node.js, Git and MongoDB installed and MongoDB running:
+
+- **Windows:** double-click `start-windows.bat`
+- **Mac / Linux:** run `./start-mac-linux.sh`
+- **Any system:** `npm run setup`
+
+This installs all dependencies, creates `server/.env` with a random `JWT_SECRET`, checks that MongoDB is reachable (and explains how to start it if not), creates the default accounts and demo data, starts the app and opens http://localhost:5173. It is safe to run every time you want to start the app.
+
+### Manual setup
 
 ```bash
 # 1. Install dependencies (root, server and client)
