@@ -48,12 +48,16 @@ export const en = {
   'errors.accountDisabled': 'Your account has been disabled',
   'errors.passwordTooShort': 'New password must be at least 6 characters',
   'errors.currentPasswordWrong': 'Current password is incorrect',
+  'errors.backupInvalid': 'This file is not a valid backup from this app',
+  'errors.backupNoAdmin': 'This backup has no active admin account, so restoring it would lock everyone out',
+  'errors.restoreFailed': 'Restore failed; your previous data has been put back',
 
   // success messages
   'msg.deleted': 'Deleted',
   'msg.productDeactivated': 'Product has transaction history and was deactivated instead of deleted',
   'msg.allRead': 'All notifications marked as read',
   'msg.passwordUpdated': 'Password updated',
+  'msg.restored': 'Backup from {date} restored',
 
   // field names used in validation messages
   'field.name': 'Name',
@@ -154,11 +158,15 @@ export const so = {
   'errors.accountDisabled': 'Akoonkaaga waa la joojiyay',
   'errors.passwordTooShort': 'Furaha sirta cusub waa inuu ahaadaa ugu yaraan 6 xaraf',
   'errors.currentPasswordWrong': 'Furaha sirta ee hadda waa khalad',
+  'errors.backupInvalid': 'Faylkani ma aha nuqul sax ah oo app-kan laga sameeyay',
+  'errors.backupNoAdmin': 'Nuqulkan kuma jiro akoon maamule oo firfircoon; soo celintiisu qof walba way xiraysaa',
+  'errors.restoreFailed': 'Soo celintu way fashilantay; xogtaadii hore dib ayaa loo soo celiyay',
 
   'msg.deleted': 'Waa la tirtiray',
   'msg.productDeactivated': 'Alaabtan waxay leedahay taariikh macaamil, sidaas darteed waa la joojiyay halkii la tirtiri lahaa',
   'msg.allRead': 'Dhammaan ogeysiisyada waxaa loo calaamadeeyay akhrisan',
   'msg.passwordUpdated': 'Furaha sirta waa la cusbooneysiiyay',
+  'msg.restored': 'Nuqulkii {date} waa la soo celiyay',
 
   'field.name': 'Magaca',
   'field.email': 'Iimaylka',

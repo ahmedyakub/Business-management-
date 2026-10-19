@@ -16,6 +16,7 @@ An all-in-one MERN (MongoDB, Express, React, Node.js) application for managing i
 | 🔔 **Low-stock alerts** | Notifications created automatically when a product reaches its minimum level and cleared when restocked; bell badge, dashboard widget, low-stock filter |
 | 🔐 **Users & Roles** | Admin, Manager, Cashier and Inventory roles enforced on both the API and UI |
 | ⚙️ **Settings** | Business name, address, tax ID, currency and default tax rate printed on invoices |
+| 💾 **Backup & restore** | Admins can download all data as one file and restore it from **Settings** |
 | 🌐 **Languages** | English and Somali (Af-Soomaali), switched with the **EN / SO** button in the top bar or on the login page |
 
 ### Roles
@@ -137,6 +138,16 @@ All endpoints are under `/api` and (except login) require `Authorization: Bearer
 | `/dashboard` | Role-aware summary metrics |
 | `/notifications` | Low-stock alerts, `PUT /notifications/read-all` |
 | `/settings` | Business details for invoices |
+| `GET /backup`, `POST /backup/restore` | Download all data as Extended JSON / replace all data from such a file (admin only) |
+
+## Backup & restore
+
+In **Settings → Backup**, an admin can:
+
+- **Download backup**: every collection (products, sales, customers, users, settings, …) as one `.json` file in MongoDB Extended JSON, so IDs and dates are restored exactly. The file includes password hashes, so keep it private. The date of the last download is shown on the page.
+- **Restore**: replaces *all* current data with a backup file. The file is validated first (format, known collections only, and it must contain an active admin so nobody gets locked out). If anything fails while writing, the previous data is put back.
+
+Command-line alternative: `mongodump --db business_management --out <folder>` and `mongorestore --drop`.
 
 ## Business rules
 
