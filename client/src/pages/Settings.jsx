@@ -4,9 +4,10 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useLang } from '../context/LanguageContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { Loading, PageHeader } from '../components/ui.jsx';
+import BackupCard from '../components/BackupCard.jsx';
 
 export default function Settings() {
-  const { settings, setSettings } = useAuth();
+  const { settings, setSettings, can } = useAuth();
   const { t } = useLang();
   const toast = useToast();
   const [form, setForm] = useState(settings);
@@ -39,6 +40,7 @@ export default function Settings() {
         <label className="full">{t('settings.footer')}<textarea rows={2} value={form.invoiceFooter} onChange={(e) => set('invoiceFooter', e.target.value)} /></label>
         <div className="form-actions full"><button className="btn btn-primary">{t('settings.save')}</button></div>
       </form>
+      {can('backup:manage') && <BackupCard />}
     </>
   );
 }

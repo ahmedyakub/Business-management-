@@ -11,6 +11,7 @@ const settingsSchema = new mongoose.Schema(
     currency: { type: String, default: 'USD' },
     defaultTaxRate: { type: Number, default: 0, min: 0 },
     invoiceFooter: { type: String, default: 'Thank you for your business!' },
+    lastBackupAt: { type: Date },
   },
   { timestamps: true }
 );

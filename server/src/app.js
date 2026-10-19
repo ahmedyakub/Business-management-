@@ -5,7 +5,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 
-import { authenticate } from './middleware/auth.js';
+import { authenticate, authorize } from './middleware/auth.js';
 import { errorHandler, notFound } from './middleware/error.js';
 import { i18nMiddleware } from './i18n/index.js';
 import authRoutes from './routes/auth.js';
@@ -18,13 +18,16 @@ import reportRoutes from './routes/reports.js';
 import dashboardRoutes from './routes/dashboard.js';
 import notificationRoutes from './routes/notifications.js';
 import settingsRoutes from './routes/settings.js';
+import backupRoutes from './routes/backup.js';
 import { categoriesRouter, customersRouter, expensesRouter, suppliersRouter } from './routes/resources.js';
 
 export function createApp() {
   const app = express();
   app.use(cors({ origin: process.env.CLIENT_URL?.split(',') || true }));
   app.use(i18nMiddleware);
-  app.use(express.json({ limit: '1mb' }));
+  // Backup restores upload the whole database; that route parses its own (larger) body after auth.
+  const json = express.json({ limit: '1mb' });
+  app.use((req, res, next) => (req.path.startsWith('/api/backup') ? next() : json(req, res, next)));
   if (process.env.NODE_ENV !== 'test') app.use(morgan('dev'));
 
   app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
@@ -45,6 +48,7 @@ export function createApp() {
   app.use('/api/dashboard', dashboardRoutes);
   app.use('/api/notifications', notificationRoutes);
   app.use('/api/settings', settingsRoutes);
+  app.use('/api/backup', authorize('backup:manage'), express.json({ limit: '200mb' }), backupRoutes);
   app.use('/api', notFound);
 
   // In production, serve the built React client.

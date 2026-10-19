@@ -227,3 +227,5 @@ label.inline { flex-direction: row; align-items: center; gap: 6px; white-space: 
 .lang-switch button + button { border-left: 1px solid var(--border); }
 .lang-switch button.active { background: var(--primary); color: #fff; }
 .login-card .lang-switch { align-self: flex-end; }
+
+.backup-restore { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); }
